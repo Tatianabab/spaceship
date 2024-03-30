@@ -1,22 +1,37 @@
 import pygame
+import random
 from settings import Settings
 from player import Player
+from enemy import Enemy
+from level import Level
 
 class Game:
     def __init__(self):
+        self.last_enemy_spawn_time = 0
         pygame.init()
         self.settings = Settings()
-        self.screen = pygame.display.set_mode((self.settings.screen_width, self.settings.screen_height))
+        self.settings.load_bd()
+        self.levels = []
+        for level in self.settings.levels_in_bd:
+            self.levels.append(Level(level['level'],
+                                     level['enemy_speed'],
+                                     level['enemy_hp'],
+                                     level['enemy_damage'],
+                                     level['enemy_spawm_delay'], self))
 
+        self.current_game_level = 1
+        self.level_now = self.levels[self.current_game_level - 1]
+        self.screen = pygame.display.set_mode((self.settings.screen_width, self.settings.screen_height))
         pygame.display.set_caption('star wars')
         pygame.display.set_icon(self.settings.icon)
         self.player = Player(self)
         self.game_begin = False
         self.in_menu = True
         self.in_options = False
+        self.game_over = False
 
     def run_game(self):
-        self.clock = pygame.time.Clock()
+        clock = pygame.time.Clock()
 
         while True:
             if not self.game_begin:
@@ -34,10 +49,11 @@ class Game:
                 self.player.bullets.update()
                 self._update_game_screen()
 
-            self.clock.tick(self.settings.fps)
+            clock.tick(self.settings.fps)
     def _check_game_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                self.settings.update_bd('players', 'score', self.settings.player_record_score)
                 exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
@@ -53,18 +69,24 @@ class Game:
             if event.type == pygame.QUIT:
                 exit()
     def _update_game_screen(self):
-        self.settings.scroll += self.settings.scroll_step
-        for i in range(0, self.settings.tiles):
-            self.screen.blit(self.settings.background, (0, i * -self.settings.background_height + self.settings.scroll))
-            self.settings.background_rect.y = i * self.settings.background_height + self.settings.scroll
-        if abs(self.settings.scroll) > self.settings.background_height:
-            self.settings.scroll = 0
-        self.player.blit_player()
-        for bullet in self.player.bullets.sprites():
-            bullet.draw_bullet()
+        if not self.game_over:
+            self.level_now.level_background_update()
+            self.level_now.explosion_group.draw(self.screen)
+            self.level_now.explosion_group.update()
+            self.level_now.level_enemy_spawn()
+            self.player.blit_player()
+            self.player.bullets.draw(self.screen)
+        else:
+            print("Game over")
         pygame.display.update()
     def _update_menu_screen(self):
         self.screen.blit(self.settings.menu_background, (0,0))
+        self.player_record_score_text = self.settings.player_score_font.render(
+            f'Рекорд: {self.settings.player_record_score}', True, (180, 0, 0))
+        self.player_record_score_text_rect = self.player_record_score_text.get_rect()
+        self.player_record_score_text_rect.centerx = self.screen.get_rect().centerx
+        self.player_record_score_text_rect.top = 100
+        self.screen.blit(self.player_record_score_text, self.player_record_score_text_rect)
         if self.settings.button_start.draw(self.screen):
             self.game_begin = True
             self.in_menu = False
@@ -82,34 +104,40 @@ class Game:
             self.in_options = False
         if self.settings.music_active:
             self.settings.button_music.set_image(self.settings.music_active_image)
-            self.settings.button_music.set_position(self.settings.button_music.width_pos, self.settings.button_music.height_pos)
+            self.settings.button_music.set_position(self.settings.button_music.width_pos,
+                                                    self.settings.button_music.height_pos)
             if self.settings.button_music.draw(self.screen):
                 self.settings.music_active = False
                 self.settings.menu_music.stop_music()
+                self.settings.update_bd('players', 'music_status', 0)
         else:
             self.settings.button_music.set_image(self.settings.music_deactive_image)
-            self.settings.button_music.set_position(self.settings.button_music.width_pos, self.settings.button_music.height_pos)
+            self.settings.button_music.set_position(self.settings.button_music.width_pos,
+                                                    self.settings.button_music.height_pos)
             if self.settings.button_music.draw(self.screen):
                 self.settings.music_active = True
                 self.settings.menu_music.run_music()
+                self.settings.update_bd('players', 'music_status', 1)
 
         if self.settings.sound_active:
             self.settings.button_sound.set_image(self.settings.sound_active_image)
             self.settings.button_sound.set_position(self.settings.button_sound.width_pos, self.settings.button_sound.height_pos)
             if self.settings.button_sound.draw(self.screen, sound=False):
                 self.settings.sound_active = False
+                self.settings.update_bd('players', 'sound_status', 0)
         else:
             self.settings.button_sound.set_image(self.settings.sound_deactive_image)
             self.settings.button_sound.set_position(self.settings.button_sound.width_pos, self.settings.button_sound.height_pos)
             if self.settings.button_sound.draw(self.screen, sound=True, force_sound=True):
                 self.settings.sound_active = True
+                self.settings.update_bd('players', 'sound_status', 1)
 
         if self.settings.backward_button.draw(self.screen):
-            self.player.switch_ship(-1)
+            self.player.switch_ship('backward')
         if self.settings.forward_button.draw(self.screen):
-            self.player.switch_ship(1)
+            self.player.switch_ship('forward')
+        self.screen.blit(self.player.ship_description, self.player.ship_description_rect)
         self.screen.blit(self.player.player_ship, self.player.player_ship.get_rect(center=self.screen.get_rect().center))
-
         pygame.display.update()
 
 if __name__ == '__main__':
