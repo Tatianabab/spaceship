@@ -132,7 +132,7 @@ class Settings:
         self.forward_button.set_position(self.screen_width - 126, (self.screen_height - self.forward_button.rect.height) // 2)
 
         self.ship_description_font = pygame.font.Font(None, 24)
-        self.player_score_font = pygame.font.Font(None, 24)
+
 
         self.player_score = 0
         self.player_record_score = 0
