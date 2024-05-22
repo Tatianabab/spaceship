@@ -2,7 +2,6 @@ import pygame
 import random
 from enemy import Enemy
 
-
 class Level:
     def __init__(self, level, enemy_speed, enemy_hp, enemy_damage, enemy_spawn_delay, game):
         self.game = game

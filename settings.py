@@ -43,7 +43,8 @@ class Settings:
         self.screen_width = 480
         self.screen_height = 720
         self.fps = 60
-        self.icon = pygame.image.load('images/ava.jpg')
+        self.icon = pygame.image.load('images/ship_1.png')
+        # self.icon = pygame.image.load('images/ava.jpg')
         self.background = pygame.image.load('images/game_back.png')
         self.background = pygame.transform.scale(self.background,(self.screen_width, self.screen_height))
 
@@ -56,7 +57,7 @@ class Settings:
         self.background_rect = self.background.get_rect()
         self.tiles = math.ceil(self.screen_width / self.background_height) + 1
 
-        # self.icon = pygame.image.load('images/ship_1.png')
+
 
         self.player_ships = {}
         for i in range(1, 4):
