@@ -1,5 +1,11 @@
 import pygame
 
+
+
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/Tatianabab/pro.git
+git push -u origin main
 class Button:
     def __init__(self, image, scale, settings):
         self.image = image
